@@ -2,6 +2,7 @@ import asyncio
 
 import utils.logging_config as logging_config  # type: ignore
 from aiogram import Bot, Dispatcher
+from handlers.user_group import router as user_group_router
 from handlers.user_private import router as user_private_router
 from utils.bot_commands import commands
 from utils.config import config
@@ -10,6 +11,7 @@ bot = Bot(token=config.bot_token)
 
 dp = Dispatcher()
 dp.include_router(user_private_router)
+dp.include_router(user_group_router)
 
 
 async def main():
