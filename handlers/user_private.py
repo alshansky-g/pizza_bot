@@ -2,7 +2,7 @@ from aiogram import F, Router, types
 from aiogram.filters import Command, CommandStart, or_f
 from aiogram.utils.formatting import Bold, as_list, as_marked_section
 from filters.chat_types import ChatTypeFilter
-from keyboards import reply
+from keyboards.reply import get_keyboard
 
 router = Router()
 router.message.filter(ChatTypeFilter(chat_types=["private"]))
@@ -12,7 +12,7 @@ router.message.filter(ChatTypeFilter(chat_types=["private"]))
 async def start_cmd(message: types.Message):
     await message.answer(
         text='Привет, я виртуальный помощник',
-        reply_markup=reply.get_keyboard(
+        reply_markup=get_keyboard(
             "Меню", "О магазине", "Варианты оплаты", "Варианты доставки",
             placeholder="Выберите один из вариантов", adjust_values=(2, 2)
         ))
@@ -26,7 +26,7 @@ async def menu_cmd(message: types.Message):
 @router.message(or_f(Command("shipping"), F.text.lower().contains("доставк")))
 async def logistics_info(message: types.Message):
     await message.answer(text="Доставляем быстро и качественно",
-                         reply_markup=reply.get_keyboard(
+                         reply_markup=get_keyboard(
                              "Отправить номер телефона",
                              request_contact=True, one_time_kbd=True
                          ))

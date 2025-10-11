@@ -8,3 +8,10 @@ class ChatTypeFilter(Filter):
 
     async def __call__(self, message: Message) -> bool:
         return message.chat.type in self.chat_types
+
+
+class IsAdmin(Filter):
+    async def __call__(self, message: Message, admins_list) -> bool:
+        if message.from_user:
+            return message.from_user.id in admins_list
+        return False
