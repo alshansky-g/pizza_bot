@@ -20,5 +20,8 @@ logging.getLogger("aiogram").setLevel(logging.INFO)
 
 # Настройка loguru (опционально формат)
 logger.remove()
-logger.add(sys.stderr, level="DEBUG",
-           format="<g>{time:HH:mm:ss}</> | <level>{level}</> | <c>{module}</> | {message}")
+logger.add(
+    sys.stderr,
+    level="DEBUG",
+    format="<g>{time:HH:mm:ss}</> | <level>{level}</> | <c>{module}</> | <level>{message}</>",
+)
