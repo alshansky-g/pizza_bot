@@ -10,10 +10,12 @@ router.message.filter(ChatTypeFilter(chat_types=["private"]))
 
 @router.message(CommandStart())
 async def start_cmd(message: types.Message):
-    await message.answer(text='Привет, я виртуальный помощник',
-                         reply_markup=reply.start_kb.as_markup(
-                             resize_keyboard=True, one_time_keyboard=True
-                         ))
+    await message.answer(
+        text='Привет, я виртуальный помощник',
+        reply_markup=reply.get_keyboard(
+            "Меню", "О магазине", "Варианты оплаты", "Варианты доставки",
+            placeholder="Выберите один из вариантов", adjust_values=(2, 2)
+        ))
 
 
 @router.message(Command("menu"))
@@ -24,7 +26,10 @@ async def menu_cmd(message: types.Message):
 @router.message(or_f(Command("shipping"), F.text.lower().contains("доставк")))
 async def logistics_info(message: types.Message):
     await message.answer(text="Доставляем быстро и качественно",
-                         reply_markup=reply.contacts_kb)
+                         reply_markup=reply.get_keyboard(
+                             "Отправить номер телефона",
+                             request_contact=True, one_time_kbd=True
+                         ))
 
 
 @router.message(F.text.lower() == "варианты оплаты")
@@ -55,5 +60,4 @@ async def get_contact(message: types.Message):
 @router.message(F.contact)
 async def get_location(message: types.Message):
     if message.contact:
-        await message.answer("Номер телефона получен")
-        await message.answer(str(message.contact.phone_number))
+        await message.answer("Номер телефона получен. Ожидайте звонка.")
