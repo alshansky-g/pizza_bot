@@ -3,7 +3,7 @@ from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardRemove
-from database.models import Product
+from database.crud import orm_add_product
 from filters.chat_types import ChatTypeFilter, IsAdmin
 from keyboards.reply import get_keyboard
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -134,10 +134,8 @@ async def add_image(message: types.Message, state: FSMContext, session: AsyncSes
     if message.photo:
         await state.update_data(image=message.photo[-1].file_id)
         product_fields = await state.get_data()
-        product = Product(**product_fields)
-        session.add(product)
-        await session.commit()
-        logger.debug("Добавленный товар: {}", await state.get_data())
+        await orm_add_product(session, product_fields)
+        logger.debug("Добавленный товар: {}", product_fields)
         await message.answer("Товар добавлен", reply_markup=ADMIN_KB)
         await state.clear()
 
