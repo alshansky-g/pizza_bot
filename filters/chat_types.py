@@ -11,7 +11,7 @@ class ChatTypeFilter(Filter):
 
 
 class IsAdmin(Filter):
-    async def __call__(self, message: Message, admins_list) -> bool:
+    async def __call__(self, message: Message, admins_list: list[int]) -> bool:
         if message.from_user:
             return message.from_user.id in admins_list
         return False
