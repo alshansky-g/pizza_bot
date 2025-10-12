@@ -7,7 +7,7 @@ class Config(BaseSettings):
     allowed_updates: list = []
     admins_list: list[int] = Field(default_factory=list)
 
-    model_config = SettingsConfigDict(env_file=".env")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
 config = Config()
