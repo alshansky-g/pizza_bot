@@ -1,6 +1,7 @@
-from database.models import Product
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from database.models import Product
 
 
 async def orm_add_product(session: AsyncSession, product_fields: dict):

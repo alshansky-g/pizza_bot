@@ -1,10 +1,11 @@
 from aiogram import F, Router, types
 from aiogram.filters import Command, CommandStart, or_f
 from aiogram.utils.formatting import Bold, as_list, as_marked_section
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from database.crud import orm_get_products
 from filters.custom import ChatTypeFilter
 from keyboards.reply import get_keyboard
-from sqlalchemy.ext.asyncio import AsyncSession
 
 router = Router()
 router.message.filter(ChatTypeFilter(chat_types=["private"]))

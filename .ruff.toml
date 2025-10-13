@@ -1,0 +1,7 @@
+line-length = 120
+target-version = "py313"
+
+[lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["F401", "F841"]
+preview = true

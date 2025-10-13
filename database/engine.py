@@ -1,5 +1,6 @@
-from database.models import Base
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+from database.models import Base
 
 engine = create_async_engine("sqlite+aiosqlite:///pizza_db.db", echo=True)
 session_maker = async_sessionmaker(bind=engine,
