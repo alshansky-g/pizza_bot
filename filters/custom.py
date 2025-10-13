@@ -15,3 +15,10 @@ class IsAdmin(Filter):
         if message.from_user:
             return message.from_user.id in admins_list
         return False
+
+
+class ProductId(Filter):
+    async def __call__(self, message: Message) -> bool:
+        if message.text:
+            return message.text.isalnum()
+        return False

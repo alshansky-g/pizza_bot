@@ -1,8 +1,10 @@
 from aiogram import F, Router, types
 from aiogram.filters import Command, CommandStart, or_f
 from aiogram.utils.formatting import Bold, as_list, as_marked_section
-from filters.chat_types import ChatTypeFilter
+from database.crud import orm_get_products
+from filters.custom import ChatTypeFilter
 from keyboards.reply import get_keyboard
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = Router()
 router.message.filter(ChatTypeFilter(chat_types=["private"]))
@@ -18,9 +20,15 @@ async def start_cmd(message: types.Message):
         ))
 
 
-@router.message(Command("menu"))
-async def menu_cmd(message: types.Message):
+@router.message(or_f(Command("menu"), F.text.lower() == "меню"))
+async def menu_cmd(message: types.Message, session: AsyncSession):
     await message.answer(text="Вот меню:")
+    for product in await orm_get_products(session):
+        await message.answer_photo(
+            product.image,
+            caption=f"<strong>{product.name}</strong>\n"
+                    f"{product.description}\nСтоимость: {product.price}"
+        )
 
 
 @router.message(or_f(Command("shipping"), F.text.lower().contains("доставк")))
