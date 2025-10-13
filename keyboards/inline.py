@@ -9,9 +9,6 @@ def get_inline_kbd(
 ):
     keyboard = InlineKeyboardBuilder()
     for text, data in buttons.items():
-        # if "://" in data:
-        #     keyboard.add(InlineKeyboardButton(text=text, url=data))
-        # else:
         keyboard.add(InlineKeyboardButton(text=text, callback_data=data))
     if adjust_values:
         keyboard.adjust(*adjust_values)
