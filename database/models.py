@@ -4,8 +4,9 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
-    updated_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now(),
-                                                 onupdate=func.now())
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
 
 
 class Product(Base):
@@ -19,3 +20,6 @@ class Product(Base):
 
     def __repr__(self):
         return f"<Product id={self.id}, name={self.name}, price={self.price}>"
+
+    def as_dict(self):
+        return {key: value for key, value in self.__dict__.items() if not key.startswith("_")}

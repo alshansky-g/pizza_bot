@@ -36,8 +36,6 @@ class AddProduct(StatesGroup):
     price = State()
     image = State()
 
-    product_to_change = None
-
     texts = {
         "AddProduct:name": "Введите название:",
         "AddProduct:description": "Введите описание:",
@@ -54,7 +52,7 @@ class GetProduct(StatesGroup):
 async def update_product(callback: types.CallbackQuery, state: FSMContext, session: AsyncSession):
     product_id = int(callback.data.split("_")[-1])
     product_to_change = await orm_get_product(session, product_id)
-    AddProduct.product_to_change = product_to_change
+    await state.update_data(**product_to_change.as_dict())
     await callback.message.answer("Введите название товара:")
     await callback.answer()
     await state.set_state(AddProduct.name)
@@ -72,16 +70,17 @@ async def get_products(message: types.Message, session: AsyncSession):
         await message.answer_photo(
             product.image,
             caption=f"<strong>{product.name}</strong>\n"
-                    f"{product.description}\nСтоимость: {product.price}",
+            f"{product.description}\nСтоимость: {product.price}",
             reply_markup=get_inline_kbd(
-                buttons={"Изменить": f"update_{product.id}",
-                         "Удалить": f"delete_{product.id}",
-                         }
-            )
+                buttons={
+                    "Изменить": f"update_{product.id}",
+                    "Удалить": f"delete_{product.id}",
+                }
+            ),
         )
 
 
-@router.callback_query(F.data.startswith("delete"))
+@router.callback_query(F.data.startswith("delete_"))
 async def delete_product(callback: types.CallbackQuery, session: AsyncSession):
     product_id = callback.data.split("_")[-1]
     await orm_delete_product(session, int(product_id))
@@ -125,8 +124,6 @@ async def cancel_handler(message: types.Message, state: FSMContext):
     current_state = await state.get_state()
     if current_state is None:
         return
-    if AddProduct.product_to_change is not None:
-        AddProduct.product_to_change = None
     await state.clear()
     await message.answer("Действия отменены", reply_markup=ADMIN_KB)
 
@@ -143,7 +140,7 @@ async def back_handler(message: types.Message, state: FSMContext):
         if step.state == current_state:
             await state.set_state(previous)
             await message.answer(
-                f"Вы вернулись к предыдущему шагу\n{AddProduct.texts[previous.state]}"  # type: ignore
+                f"Вы вернулись к предыдущему шагу\n{AddProduct.texts[previous.state]}"
             )
             return
         previous = step
@@ -151,9 +148,7 @@ async def back_handler(message: types.Message, state: FSMContext):
 
 @router.message(AddProduct.name, or_f(F.text, F.text == "."))
 async def add_name(message: types.Message, state: FSMContext):
-    if message.text == ".":
-        await state.update_data(name=AddProduct.product_to_change.name)
-    else:
+    if message.text != ".":
         await state.update_data(name=message.text)
     await message.answer("Введите описание товара:")
     await state.set_state(AddProduct.description)
@@ -166,24 +161,20 @@ async def add_name_fallback(message: types.Message, state: FSMContext):
 
 @router.message(AddProduct.description, or_f(F.text, F.text == "."))
 async def add_description(message: types.Message, state: FSMContext):
-    if message.text == ".":
-        await state.update_data(description=AddProduct.product_to_change.description)
-    else:
+    if message.text != ".":
         await state.update_data(description=message.text)
     await message.answer("Введите стоимость товара:")
     await state.set_state(AddProduct.price)
 
 
 @router.message(AddProduct.description)
-async def add_description_fallback(message: types.Message, state: FSMContext):
+async def add_description_fallback(message: types.Message):
     await message.answer("Вы ввели недопустимые данные. Введите описание товара:")
 
 
 @router.message(AddProduct.price, or_f(F.text, F.text == "."))
 async def add_price(message: types.Message, state: FSMContext):
-    if message.text == ".":
-        await state.update_data(price=AddProduct.product_to_change.price)
-    else:
+    if message.text != ".":
         try:
             price = float(message.text)
             await state.update_data(price=price)
@@ -201,21 +192,18 @@ async def add_price_fallback(message: types.Message):
 
 @router.message(AddProduct.image, or_f(F.photo, F.text == "."))
 async def add_image(message: types.Message, state: FSMContext, session: AsyncSession):
-    if message.text == ".":
-        await state.update_data(image=AddProduct.product_to_change.image)
-    else:
+    if message.photo:
         await state.update_data(image=message.photo[-1].file_id)
-    product_fields = await state.get_data()
-    if AddProduct.product_to_change is not None:
-        await orm_update_product(session, AddProduct.product_to_change.id,
-                                 product_fields)
+    product = await state.get_data()
+
+    if (product_id := product.get("id")) is not None:
+        await orm_update_product(session, product_id, product)
         await message.answer("Товар обновлён", reply_markup=ADMIN_KB)
     else:
-        await orm_add_product(session, product_fields)
-        logger.debug("Добавленный товар: {}", product_fields)
+        await orm_add_product(session, product)
+        logger.debug("Добавленный товар: {}", product)
         await message.answer("Товар добавлен", reply_markup=ADMIN_KB)
     await state.clear()
-    AddProduct.product_to_change = None
 
 
 @router.message(AddProduct.image)
