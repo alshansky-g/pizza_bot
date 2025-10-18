@@ -1,17 +1,54 @@
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models import Product
+from database.models import Banner, Category, Product
 
 
+# Баннеры
+async def orm_add_banner_description(session: AsyncSession, data: dict):
+    banner = await session.scalar(select(Banner))
+    if banner is None:
+        session.add_all([Banner(
+            name=name, description=description)
+            for name, description in data.items()])
+        await session.commit()
+
+
+async def orm_get_info_pages(session: AsyncSession):
+    pages_info = await session.scalars(select(Banner))
+    return pages_info.all()
+
+
+async def orm_change_banner_image(session: AsyncSession, name: str, image: str):
+    await session.execute(update(Banner).where(Banner.name == name)
+                          .values(image=image))
+    await session.commit()
+
+
+# Категории
+async def orm_create_categories(session: AsyncSession, categories: list):
+    category = await session.scalar(select(Category))
+    if category is None:
+        session.add_all([Category(name=name) for name in categories])
+        await session.commit()
+
+
+async def orm_get_categories(session: AsyncSession):
+    categories = await session.scalars(select(Category))
+    return categories.all()
+
+
+# Товары
 async def orm_add_product(session: AsyncSession, product_fields: dict):
     product = Product(**product_fields)
     session.add(product)
     await session.commit()
 
 
-async def orm_get_products(session: AsyncSession):
-    products = await session.scalars(select(Product))
+async def orm_get_products(session: AsyncSession, category_id: int):
+    products = await session.scalars(select(Product).where(
+        Product.category_id == category_id
+    ))
     return products.all()
 
 

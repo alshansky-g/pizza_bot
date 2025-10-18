@@ -7,12 +7,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.crud import (
     orm_add_product,
+    orm_change_banner_image,
     orm_delete_product,
+    orm_get_categories,
+    orm_get_info_pages,
     orm_get_product,
     orm_get_products,
     orm_update_product,
 )
-from filters.custom import ChatTypeFilter, IsAdmin, ProductId
+from filters.custom import ChatTypeFilter, IsAdmin
 from keyboards.inline import get_inline_kbd
 from keyboards.reply import get_keyboard
 from utils.logging_config import logger
@@ -23,8 +26,8 @@ router.message.filter(ChatTypeFilter(chat_types=["private"]), IsAdmin())
 
 ADMIN_KB = get_keyboard(
     "Добавить товар",
-    "Посмотреть товар по id",
     "Ассортимент",
+    "Добавить/изменить баннер",
     placeholder="Выберите действие",
     adjust_values=(2, 1),
 )
@@ -33,6 +36,7 @@ ADMIN_KB = get_keyboard(
 class AddProduct(StatesGroup):
     name = State()
     description = State()
+    category = State()
     price = State()
     image = State()
 
@@ -44,8 +48,38 @@ class AddProduct(StatesGroup):
     }
 
 
-class GetProduct(StatesGroup):
-    product_id = State()
+class AddBanner(StatesGroup):
+    image = State()
+
+
+@router.message(StateFilter(None), F.text == 'Добавить/изменить баннер')
+async def add_banner_image(message: types.Message, state: FSMContext,
+                           session: AsyncSession):
+    page_names = [page.name for page in await orm_get_info_pages(session)]
+    await message.answer('Отправьте изображение баннера.\nВ описании укажите, для какой страницы:'
+                         f'\n{', '.join(page_names)}')
+    await state.set_state(AddBanner.image)
+
+
+@router.message(AddBanner.image, F.photo)
+async def add_banner(message: types.Message, state: FSMContext, session: AsyncSession):
+    image_id = message.photo[-1].file_id
+    for_page = message.caption.strip()
+    page_names = [page.name for page in await orm_get_info_pages(session)]
+    if for_page not in page_names:
+        await message.answer(
+            "Введите корректное название из списка:"
+            f"\n{', '.join(page_names)}"
+        )
+        return
+    await orm_change_banner_image(session, for_page, image_id)
+    await message.answer("Баннер добавлен/изменен.")
+    await state.clear()
+
+
+@router.message(AddBanner.image)
+async def add_banner_fallback(message: types.Message):
+    await message.answer("Попробуйте отправить изображение снова")
 
 
 @router.callback_query(StateFilter(None), F.data.startswith("update_"))
@@ -64,10 +98,18 @@ async def add_product(message: types.Message):
 
 
 @router.message(F.text == "Ассортимент")
-async def get_products(message: types.Message, session: AsyncSession):
-    await message.answer(text="Список товаров:")
-    for product in await orm_get_products(session):
-        await message.answer_photo(
+async def choose_category(message: types.Message, session: AsyncSession):
+    categories = await orm_get_categories(session)
+    buttons = {category.name: f"category_{category.id}" for category in categories}
+    await message.answer("Выберите категорию", reply_markup=get_inline_kbd(buttons=buttons))
+
+
+@router.callback_query(F.data.startswith("category_"))
+async def get_products(callback: types.CallbackQuery, session: AsyncSession):
+    category_id = int(callback.data.split("_")[-1])
+    await callback.message.answer(text="Список товаров:")
+    for product in await orm_get_products(session, category_id):
+        await callback.message.answer_photo(
             product.image,
             caption=f"<strong>{product.name}</strong>\n"
             f"{product.description}\nСтоимость: {product.price}",
@@ -86,30 +128,6 @@ async def delete_product(callback: types.CallbackQuery, session: AsyncSession):
     await orm_delete_product(session, int(product_id))
     await callback.message.answer("Товар удалён")
     await callback.answer()
-
-
-@router.message(StateFilter(None), F.text == "Посмотреть товар по id")
-async def get_product(message: types.Message, state: FSMContext):
-    await message.answer("Введите id товара:", reply_markup=ReplyKeyboardRemove())
-    await state.set_state(GetProduct.product_id)
-
-
-@router.message(GetProduct.product_id, ProductId())
-async def get_product_by_id(message: types.Message, session: AsyncSession, state: FSMContext):
-    if message.text:
-        product_id = int(message.text)
-        product = await orm_get_product(session, product_id)
-        if product is None:
-            await message.answer(f"Нет товара с id={product_id}")
-        else:
-            text = f"""
-            Название: {product.name}
-            Описание: {product.description}
-            Стоимость: {product.price}
-            Изображение: {product.image}
-                    """
-            await message.answer(text=text, reply_markup=ADMIN_KB)
-    await state.clear()
 
 
 @router.message(StateFilter(None), F.text == "Добавить товар")
@@ -160,16 +178,32 @@ async def add_name_fallback(message: types.Message, state: FSMContext):
 
 
 @router.message(AddProduct.description, or_f(F.text, F.text == "."))
-async def add_description(message: types.Message, state: FSMContext):
+async def add_description(message: types.Message, state: FSMContext,
+                          session: AsyncSession):
     if message.text != ".":
         await state.update_data(description=message.text)
-    await message.answer("Введите стоимость товара:")
-    await state.set_state(AddProduct.price)
+    categories = await orm_get_categories(session)
+    buttons = {category.name: str(category.id) for category in categories}
+    await message.answer("Введите категорию товара:", reply_markup=get_inline_kbd(buttons=buttons))
+    await state.set_state(AddProduct.category)
 
 
 @router.message(AddProduct.description)
 async def add_description_fallback(message: types.Message):
     await message.answer("Вы ввели недопустимые данные. Введите описание товара:")
+
+
+@router.callback_query(AddProduct.category)
+async def category_choice(callback: types.CallbackQuery, state: FSMContext,
+                          session: AsyncSession):
+    if int(callback.data) in [category.id for category in await orm_get_categories(session)]:
+        await callback.answer()
+        await state.update_data(category_id=int(callback.data))
+        await callback.message.answer("Введите стоимость товара:")
+        await state.set_state(AddProduct.price)
+    else:
+        await callback.message.answer("Выберите категорию из кнопок")
+        await callback.answer()
 
 
 @router.message(AddProduct.price, or_f(F.text, F.text == "."))

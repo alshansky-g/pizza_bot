@@ -6,9 +6,14 @@ from loguru import logger
 
 class InterceptHandler(logging.Handler):
     def emit(self, record):
-        level = record.levelname
-        if level not in logger._core.levels:  # type: ignore
+        if record.name.startswith("debugpy") or record.name.startswith("asyncio"):
+            return
+
+        try:
+            level = logger.level(record.levelname).name
+        except ValueError:
             level = "INFO"
+
         logger.log(level, record.getMessage())
 
 
