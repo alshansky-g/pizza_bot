@@ -1,7 +1,7 @@
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models import Banner, Category, Product
+from database.models import Banner, Category, Product, User
 
 
 # Баннеры
@@ -14,15 +14,20 @@ async def orm_add_banner_description(session: AsyncSession, data: dict):
         await session.commit()
 
 
-async def orm_get_info_pages(session: AsyncSession):
-    pages_info = await session.scalars(select(Banner))
-    return pages_info.all()
-
-
 async def orm_change_banner_image(session: AsyncSession, name: str, image: str):
     await session.execute(update(Banner).where(Banner.name == name)
                           .values(image=image))
     await session.commit()
+
+
+async def orm_get_banner(session: AsyncSession, name: str):
+    banner = await session.scalar(select(Banner).where(Banner.name == name))
+    return banner
+
+
+async def orm_get_info_pages(session: AsyncSession):
+    pages_info = await session.scalars(select(Banner))
+    return pages_info.all()
 
 
 # Категории
@@ -38,7 +43,7 @@ async def orm_get_categories(session: AsyncSession):
     return categories.all()
 
 
-# Товары
+# Админка Товары
 async def orm_add_product(session: AsyncSession, product_fields: dict):
     product = Product(**product_fields)
     session.add(product)
@@ -71,3 +76,32 @@ async def orm_update_product(session: AsyncSession, product_id: int, data: dict)
 async def orm_delete_product(session: AsyncSession, product_id: int):
     await session.execute(delete(Product).where(Product.id == product_id))
     await session.commit()
+
+
+# Создание пользователя
+async def orm_add_user(
+        session: AsyncSession,
+        user_id: int,
+        first_name: str | None = None,
+        last_name: str | None = None,
+        phone: str | None = None
+):
+    user = await session.scalar(select(User).where(User.id == user_id))
+    if user is None:
+        session.add(
+            User(id=user_id, first_name=first_name, last_name=last_name, phone=phone)
+        )
+        await session.commit()
+
+
+# Работа с корзиной
+async def orm_add_to_cart():
+    ...
+
+
+async def orm_delete_from_cart():
+    ...
+
+
+async def decrease_items_in_cart():
+    ...
