@@ -1,71 +1,24 @@
-from aiogram import F, Router, types
-from aiogram.filters import Command, CommandStart, or_f
-
-# from aiogram.utils.formatting import Bold, as_list, as_marked_section
+from aiogram import Router
+from aiogram.filters import CommandStart
+from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.crud import orm_get_products
 from filters.custom import ChatTypeFilter
 from handlers.menu_processing import get_menu_content
-from keyboards.reply import get_keyboard
+from keyboards.inline import MenuCallback
 
 router = Router()
 router.message.filter(ChatTypeFilter(chat_types=["private"]))
 
 
 @router.message(CommandStart())
-async def start_cmd(message: types.Message, session: AsyncSession):
-    banner, reply_markup = await get_menu_content(session, level=0, menu_name='main')
-    await message.answer_photo(banner.image, caption=banner.description, reply_markup=reply_markup)
+async def start_cmd(message: Message, session: AsyncSession):
+    media, reply_markup = await get_menu_content(session, level=0, menu_name='Главная')
+    await message.answer_photo(media.media, caption=media.caption, reply_markup=reply_markup)
 
 
-@router.message(or_f(Command("menu"), F.text.lower() == "меню"))
-async def menu_cmd(message: types.Message, session: AsyncSession):
-    await message.answer(text="Вот меню:")
-    for product in await orm_get_products(session):
-        await message.answer_photo(
-            product.image,
-            caption=f"<strong>{product.name}</strong>\n"
-                    f"{product.description}\nСтоимость: {product.price}"
-        )
-
-
-@router.message(or_f(Command("shipping"), F.text.lower().contains("доставк")))
-async def logistics_info(message: types.Message):
-    await message.answer(text="Доставляем быстро и качественно",
-                         reply_markup=get_keyboard(
-                             "Отправить номер телефона",
-                             request_contact=True, one_time_kbd=True
-                         ))
-
-
-@router.message(F.text.lower() == "варианты оплаты")
-async def payment_options(message: types.Message):
-    # text = as_list(as_marked_section(
-    #     Bold("Варианты оплаты:"),
-    #     "Картой в боте",
-    #     "При получении: карта/наличные",
-    #     "В заведении",
-    #     marker="✅"
-    #     ),
-    #     as_marked_section(
-    #         Bold("Нельзя:"),
-    #         "Почта",
-    #         "Голуби",
-    #         marker="❌"
-    #     ),
-    #     sep="\n--------------\n")
-    # await message.answer(text=text.as_html())
-    pass
-
-
-@router.message(F.location)
-async def get_contact(message: types.Message):
-    await message.answer("Локация получена")
-    await message.answer(str(message.location))
-
-
-@router.message(F.contact)
-async def get_location(message: types.Message):
-    if message.contact:
-        await message.answer("Номер телефона получен. Ожидайте звонка.")
+@router.callback_query(MenuCallback.filter())
+async def user_menu(callback: CallbackQuery, callback_data: MenuCallback, session: AsyncSession):
+    media, reply_markup = await get_menu_content(session, callback_data.level, callback_data.menu_name)
+    await callback.message.edit_media(media=media, reply_markup=reply_markup)
+    await callback.answer()

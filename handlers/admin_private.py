@@ -64,11 +64,12 @@ async def add_banner_image(message: types.Message, state: FSMContext,
 @router.message(AddBanner.image, F.photo)
 async def add_banner(message: types.Message, state: FSMContext, session: AsyncSession):
     image_id = message.photo[-1].file_id
-    for_page = message.caption.strip()
+    for_page = message.caption.strip().capitalize()
     page_names = [page.name for page in await orm_get_info_pages(session)]
+    logger.debug('Page names: {}', page_names)
     if for_page not in page_names:
         await message.answer(
-            "Введите корректное название из списка:"
+            "Отправьте изображение снова и введите <b>корректное</b> название из списка:"
             f"\n{', '.join(page_names)}"
         )
         return
@@ -77,7 +78,7 @@ async def add_banner(message: types.Message, state: FSMContext, session: AsyncSe
     await state.clear()
 
 
-@router.message(AddBanner.image)
+@router.message(AddBanner.image, ~(F.text.lower() == 'отмена'))
 async def add_banner_fallback(message: types.Message):
     await message.answer("Попробуйте отправить изображение снова")
 
