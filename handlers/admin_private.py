@@ -241,5 +241,5 @@ async def add_image(message: types.Message, state: FSMContext, session: AsyncSes
 
 
 @router.message(AddProduct.image)
-async def add_image_fallback(message: types.Message, state: FSMContext):
+async def add_image_fallback(message: types.Message):
     await message.answer("Вы ввели недопустимые данные. Загрузите изображение товара:")

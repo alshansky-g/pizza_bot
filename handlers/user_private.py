@@ -1,10 +1,12 @@
 from aiogram import F, Router, types
 from aiogram.filters import Command, CommandStart, or_f
-from aiogram.utils.formatting import Bold, as_list, as_marked_section
+
+# from aiogram.utils.formatting import Bold, as_list, as_marked_section
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.crud import orm_get_products
 from filters.custom import ChatTypeFilter
+from handlers.menu_processing import get_menu_content
 from keyboards.reply import get_keyboard
 
 router = Router()
@@ -12,13 +14,9 @@ router.message.filter(ChatTypeFilter(chat_types=["private"]))
 
 
 @router.message(CommandStart())
-async def start_cmd(message: types.Message):
-    await message.answer(
-        text='Привет, я виртуальный помощник',
-        reply_markup=get_keyboard(
-            "Меню", "О магазине", "Варианты оплаты", "Варианты доставки",
-            placeholder="Выберите один из вариантов", adjust_values=(2, 2)
-        ))
+async def start_cmd(message: types.Message, session: AsyncSession):
+    banner, reply_markup = await get_menu_content(session, level=0, menu_name='main')
+    await message.answer_photo(banner.image, caption=banner.description, reply_markup=reply_markup)
 
 
 @router.message(or_f(Command("menu"), F.text.lower() == "меню"))
@@ -43,21 +41,22 @@ async def logistics_info(message: types.Message):
 
 @router.message(F.text.lower() == "варианты оплаты")
 async def payment_options(message: types.Message):
-    text = as_list(as_marked_section(
-        Bold("Варианты оплаты:"),
-        "Картой в боте",
-        "При получении: карта/наличные",
-        "В заведении",
-        marker="✅"
-        ),
-        as_marked_section(
-            Bold("Нельзя:"),
-            "Почта",
-            "Голуби",
-            marker="❌"
-        ),
-        sep="\n--------------\n")
-    await message.answer(text=text.as_html())
+    # text = as_list(as_marked_section(
+    #     Bold("Варианты оплаты:"),
+    #     "Картой в боте",
+    #     "При получении: карта/наличные",
+    #     "В заведении",
+    #     marker="✅"
+    #     ),
+    #     as_marked_section(
+    #         Bold("Нельзя:"),
+    #         "Почта",
+    #         "Голуби",
+    #         marker="❌"
+    #     ),
+    #     sep="\n--------------\n")
+    # await message.answer(text=text.as_html())
+    pass
 
 
 @router.message(F.location)
