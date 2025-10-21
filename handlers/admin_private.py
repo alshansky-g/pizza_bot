@@ -43,6 +43,7 @@ class AddProduct(StatesGroup):
     texts = {
         "AddProduct:name": "Введите название:",
         "AddProduct:description": "Введите описание:",
+        "AddProduct:category": "Выберите категорию",
         "AddProduct:price": "Введите стоимость:",
         "AddProduct:image": "Добавьте изображение:",
     }
@@ -83,16 +84,6 @@ async def add_banner_fallback(message: types.Message):
     await message.answer("Попробуйте отправить изображение снова")
 
 
-@router.callback_query(StateFilter(None), F.data.startswith("update_"))
-async def update_product(callback: types.CallbackQuery, state: FSMContext, session: AsyncSession):
-    product_id = int(callback.data.split("_")[-1])
-    product_to_change = await orm_get_product(session, product_id)
-    await state.update_data(**product_to_change.as_dict())
-    await callback.message.answer("Введите название товара:")
-    await callback.answer()
-    await state.set_state(AddProduct.name)
-
-
 @router.message(Command("admin"))
 async def add_product(message: types.Message):
     await message.answer("Что хотите сделать?", reply_markup=ADMIN_KB)
@@ -123,6 +114,16 @@ async def get_products(callback: types.CallbackQuery, session: AsyncSession):
         )
 
 
+@router.callback_query(StateFilter(None), F.data.startswith("update_"))
+async def update_product(callback: types.CallbackQuery, state: FSMContext, session: AsyncSession):
+    product_id = int(callback.data.split("_")[-1])
+    product_to_change = await orm_get_product(session, product_id)
+    await state.update_data(**product_to_change.as_dict())
+    await callback.message.answer("Введите название товара:")
+    await callback.answer()
+    await state.set_state(AddProduct.name)
+
+
 @router.callback_query(F.data.startswith("delete_"))
 async def delete_product(callback: types.CallbackQuery, session: AsyncSession):
     product_id = callback.data.split("_")[-1]
@@ -149,14 +150,24 @@ async def cancel_handler(message: types.Message, state: FSMContext):
 
 @router.message(StateFilter("*"), Command("назад"))
 @router.message(StateFilter("*"), F.text.casefold() == "назад")
-async def back_handler(message: types.Message, state: FSMContext):
+async def back_handler(message: types.Message, state: FSMContext, session: AsyncSession):
     current_state = await state.get_state()
     if current_state == AddProduct.name:
         await message.answer('Предыдущего шага нет. Введите название товара или напишите "отмена"')
         return
+    elif current_state == AddProduct.price:
+        await state.set_state(AddProduct.category)
+        categories = await orm_get_categories(session)
+        buttons = {category.name: str(category.id) for category in categories}
+        await message.answer(
+            f"Вы вернулись к предыдущему шагу\n{AddProduct.texts[AddProduct.category.state]}",
+            reply_markup=get_inline_kbd(buttons=buttons)
+        )
+        return
     previous = None
     for step in AddProduct.__all_states__:
         if step.state == current_state:
+            logger.debug('Предыдущее состояние: {}', previous.state)
             await state.set_state(previous)
             await message.answer(
                 f"Вы вернулись к предыдущему шагу\n{AddProduct.texts[previous.state]}"
