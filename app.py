@@ -27,7 +27,7 @@ async def on_startup():
 
 
 async def on_shutdown():
-    logger.debug('Бот остановлен')
+    logger.debug("Бот остановлен")
 
 
 async def main():
@@ -36,7 +36,9 @@ async def main():
 
     await create_db()
     await bot.delete_webhook(drop_pending_updates=True)
-    await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types(), admins_list=config.admins_list)
+    await dp.start_polling(
+        bot, allowed_updates=dp.resolve_used_update_types(), admins_list=config.admins_list
+    )
 
 
 if __name__ == "__main__":
