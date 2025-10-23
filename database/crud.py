@@ -87,24 +87,24 @@ async def orm_add_user(
     last_name: str | None = None,
     phone: str | None = None,
 ):
-    user = await session.scalar(select(User).where(User.id == user_id))
+    user = await session.get(User, user_id)
     if user is None:
         user = User(id=user_id, first_name=first_name, last_name=last_name, phone=phone)
         user.cart = Cart(id=user_id)
         session.add(user)
-        await session.commit()
+        # await session.commit()
 
 
 # Работа с корзиной
 async def orm_add_to_cart(session: AsyncSession, user_id: int, product_id: int):
-    cart = await session.get(CartProduct, (user_id, product_id))
+    cart = await session.get(CartProduct, (product_id, user_id))
+    amount = 1
     if cart:
         cart.quantity += 1
-        await session.commit()
-        return cart
+        amount = cart.quantity
     else:
         session.add(CartProduct(cart_id=user_id, product_id=product_id, quantity=1))
-        await session.commit()
+    return amount
 
 
 async def orm_get_user_products(session: AsyncSession, user_id: int):
