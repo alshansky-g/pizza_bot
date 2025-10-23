@@ -7,7 +7,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from database.models import Category
 
 
-class MenuCallback(CallbackData, prefix="menu"):
+class MenuCallback(CallbackData, prefix='menu'):
     level: int
     menu_name: str
     category: int | None = None
@@ -20,22 +20,22 @@ main_menu_kb = (
         [
             [
                 InlineKeyboardButton(
-                    text="Товары 🍕",
-                    callback_data=MenuCallback(level=1, menu_name="Категории").pack(),
+                    text='Товары 🍕',
+                    callback_data=MenuCallback(level=1, menu_name='Категории').pack(),
                 ),
                 InlineKeyboardButton(
-                    text="Корзина 🛒",
-                    callback_data=MenuCallback(level=3, menu_name="Корзина").pack(),
+                    text='Корзина 🛒',
+                    callback_data=MenuCallback(level=3, menu_name='Корзина').pack(),
                 ),
                 InlineKeyboardButton(
-                    text="О нас ℹ️", callback_data=MenuCallback(level=0, menu_name="О нас").pack()
+                    text='О нас ℹ️', callback_data=MenuCallback(level=0, menu_name='О нас').pack()
                 ),
                 InlineKeyboardButton(
-                    text="Оплата 💳", callback_data=MenuCallback(level=0, menu_name="Оплата").pack()
+                    text='Оплата 💳', callback_data=MenuCallback(level=0, menu_name='Оплата').pack()
                 ),
                 InlineKeyboardButton(
-                    text="Доставка 🚗",
-                    callback_data=MenuCallback(level=0, menu_name="Доставка").pack(),
+                    text='Доставка 🚗',
+                    callback_data=MenuCallback(level=0, menu_name='Доставка').pack(),
                 ),
             ]
         ]
@@ -51,12 +51,12 @@ def get_user_catalog_btns(
     keyboard = InlineKeyboardBuilder()
     keyboard.add(
         InlineKeyboardButton(
-            text="Назад", callback_data=MenuCallback(level=level - 1, menu_name="Главная").pack()
+            text='Назад', callback_data=MenuCallback(level=level - 1, menu_name='Главная').pack()
         )
     )
     keyboard.add(
         InlineKeyboardButton(
-            text="Корзина 🛒", callback_data=MenuCallback(level=3, menu_name="Корзина").pack()
+            text='Корзина 🛒', callback_data=MenuCallback(level=3, menu_name='Корзина').pack()
         )
     )
 
@@ -84,19 +84,19 @@ def get_products_btns(
     keyboard = InlineKeyboardBuilder()
     keyboard.add(
         InlineKeyboardButton(
-            text="Назад", callback_data=MenuCallback(level=level - 1, menu_name="Категории").pack()
+            text='Назад', callback_data=MenuCallback(level=level - 1, menu_name='Категории').pack()
         )
     )
     keyboard.add(
         InlineKeyboardButton(
-            text="Корзина 🛒", callback_data=MenuCallback(level=3, menu_name="Корзина").pack()
+            text='Корзина 🛒', callback_data=MenuCallback(level=3, menu_name='Корзина').pack()
         )
     )
     keyboard.add(
         InlineKeyboardButton(
-            text="Купить 💸",
+            text='Купить 💸',
             callback_data=MenuCallback(
-                level=level, menu_name="В корзину", product_id=product_id
+                level=level, menu_name='В корзину', product_id=product_id
             ).pack(),
         )
     )
@@ -111,7 +111,7 @@ def get_products_btns(
                     level=level,
                     menu_name=menu_name,
                     category=category,
-                    page=page + 1 if menu_name == "next" else page - 1,
+                    page=page + 1 if menu_name == 'next' else page - 1,
                 ).pack(),
             )
         )

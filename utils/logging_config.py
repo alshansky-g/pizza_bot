@@ -22,11 +22,11 @@ class InterceptHandler(logging.Handler):
 
 logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
 
-logging.getLogger("aiogram").setLevel(logging.INFO)
+logging.getLogger('aiogram').setLevel(logging.INFO)
 
 logger.remove()
 logger.add(
     sys.stderr,
-    level="DEBUG",
-    format="<g>{time:HH:mm:ss}</> | <level>{level}</> | <c>{module}</> | <level>{message}</>",
+    level='DEBUG',
+    format='<g>{time:HH:mm:ss}</> | <level>{level}</> | <c>{module}</> | <level>{message}</>',
 )

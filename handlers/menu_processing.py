@@ -28,9 +28,9 @@ async def products(session: AsyncSession, level: int, category: int, page: int):
 
     image = InputMediaPhoto(
         media=product.image,
-        caption=f"<strong>{product.name}</strong>\n{product.description}\n"
-        f"Стоимость: {round(product.price, 2)}\n"
-        f"<strong>Товар {paginator.page} из {paginator.pages}</strong>",
+        caption=f'<strong>{product.name}</strong>\n{product.description}\n'
+        f'Стоимость: {round(product.price, 2)}\n'
+        f'<strong>Товар {paginator.page} из {paginator.pages}</strong>',
     )
     pagination_buttons = paginator.get_buttons()
     keyboard = get_products_btns(

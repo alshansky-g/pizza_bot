@@ -8,12 +8,12 @@ from handlers.menu_processing import get_menu_content
 from keyboards.inline import MenuCallback
 
 router = Router()
-router.message.filter(ChatTypeFilter(chat_types=["private"]))
+router.message.filter(ChatTypeFilter(chat_types=['private']))
 
 
 @router.message(CommandStart())
 async def start_cmd(message: Message, session: AsyncSession):
-    media, reply_markup = await get_menu_content(session, level=0, menu_name="Главная")
+    media, reply_markup = await get_menu_content(session, level=0, menu_name='Главная')
     await message.answer_photo(media.media, caption=media.caption, reply_markup=reply_markup)
 
 
@@ -24,7 +24,7 @@ async def user_menu(callback: CallbackQuery, callback_data: MenuCallback, sessio
         level=callback_data.level,
         menu_name=callback_data.menu_name,
         category=callback_data.category,
-        page=callback_data.page
+        page=callback_data.page,
     )
 
     await callback.message.edit_media(media=media, reply_markup=reply_markup)

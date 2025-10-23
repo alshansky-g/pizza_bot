@@ -14,8 +14,8 @@ class DataBaseSession(BaseMiddleware):
         self,
         handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
         event: TelegramObject,
-        data: dict[str, Any]
-) -> Any:
+        data: dict[str, Any],
+    ) -> Any:
         async with self.session_pool() as session:
-            data["session"] = session
+            data['session'] = session
             return await handler(event, data)

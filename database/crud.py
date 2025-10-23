@@ -10,10 +10,7 @@ async def orm_add_banner_description(session: AsyncSession, data: dict):
     banner = await session.scalar(select(Banner))
     if banner is None:
         session.add_all(
-            [
-                Banner(name=name, description=description)
-                for name, description in data.items()
-            ]
+            [Banner(name=name, description=description) for name, description in data.items()]
         )
         await session.commit()
 
@@ -54,9 +51,7 @@ async def orm_add_product(session: AsyncSession, product_fields: dict):
 
 
 async def orm_get_products(session: AsyncSession, category_id: int):
-    products = await session.scalars(
-        select(Product).where(Product.category_id == category_id)
-    )
+    products = await session.scalars(select(Product).where(Product.category_id == category_id))
     return products.all()
 
 
@@ -70,10 +65,10 @@ async def orm_update_product(session: AsyncSession, product_id: int, data: dict)
         update(Product)
         .where(Product.id == product_id)
         .values(
-            name=data["name"],
-            description=data["description"],
-            price=data["price"],
-            image=data["image"],
+            name=data['name'],
+            description=data['description'],
+            price=data['price'],
+            image=data['image'],
         )
     )
     await session.commit()
@@ -116,9 +111,7 @@ async def orm_get_user_products(session: AsyncSession, user_id: int):
     query = (
         select(User)
         .options(
-            joinedload(User.cart)
-            .joinedload(Cart.products_assoc)
-            .joinedload(CartProduct.product)
+            joinedload(User.cart).joinedload(Cart.products_assoc).joinedload(CartProduct.product)
         )
         .where(User.id == user_id)
     )
