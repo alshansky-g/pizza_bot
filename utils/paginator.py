@@ -21,6 +21,14 @@ class Paginator:
         page_items = self._get_slice()
         return page_items
 
+    def get_buttons(self):
+        buttons = dict()
+        if self.has_previous():
+            buttons['◀️ Пред.'] = 'previous'
+        if self.has_next():
+            buttons['След. ▶️'] = 'next'
+        return buttons
+
     def has_next(self):
         if self.page < self.pages:
             return self.page + 1

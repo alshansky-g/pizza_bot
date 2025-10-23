@@ -32,7 +32,7 @@ async def products(session: AsyncSession, level: int, category: int, page: int):
         f"Стоимость: {round(product.price, 2)}\n"
         f"<strong>Товар {paginator.page} из {paginator.pages}</strong>",
     )
-    pagination_buttons = pages(paginator)
+    pagination_buttons = paginator.get_buttons()
     keyboard = get_products_btns(
         level=level,
         category=category,
@@ -41,15 +41,6 @@ async def products(session: AsyncSession, level: int, category: int, page: int):
         product_id=product.id,
     )
     return image, keyboard
-
-
-def pages(paginator: Paginator):
-    buttons = dict()
-    if paginator.has_previous():
-        buttons['◀️ Пред.'] = 'previous'
-    if paginator.has_next():
-        buttons['След. ▶️'] = 'next'
-    return buttons
 
 
 # TODO дописать инлайн меню
