@@ -1,8 +1,19 @@
 from aiogram.types import InputMediaPhoto
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.crud import orm_get_banner, orm_get_categories, orm_get_products
-from keyboards.inline import get_products_btns, get_user_catalog_btns, main_menu_kb
+from database.crud import (
+    orm_get_banner,
+    orm_get_categories,
+    orm_get_products,
+    orm_get_user_products,
+)
+from keyboards.inline import (
+    get_cart_buttons,
+    get_products_btns,
+    get_user_catalog_btns,
+    main_menu_kb,
+)
+from utils.logging_config import logger
 from utils.paginator import Paginator
 
 
@@ -43,6 +54,32 @@ async def products(session: AsyncSession, level: int, category: int, page: int):
     return image, keyboard
 
 
+# TODO: убрать дебаг
+async def cart(session, level, user_id, page):
+    logger.debug('ДО ЗАПРОСА')
+    user_cart = await orm_get_user_products(session, user_id)
+    logger.debug('ПОСЛЕ ЗАПРОСА, ДО ПЕРЕБОРА В СПИСКЕ')
+    products = [(pos.product, pos.quantity) for pos in user_cart]
+    logger.debug('ПОСЛЕ ПЕРЕБОРА В СПИСКЕ')
+    paginator = Paginator(products, page=page)
+    cart, *_ = paginator.get_page()
+    product, quantity = cart
+    media = InputMediaPhoto(
+        media=product.image,
+        caption=f'<strong>{product.name}</strong>\n{product.description}\n'
+        f'Количество в корзине: <strong>{quantity}</strong>',
+    )
+    pagination_buttons = paginator.get_buttons()
+    keyboard = get_cart_buttons(
+        level=level,
+        pagination_btns=pagination_buttons,
+        page=page,
+        product_id=product.id,
+        quantity=quantity,
+    )
+    return media, keyboard
+
+
 # TODO дописать инлайн меню
 async def get_menu_content(
     session: AsyncSession,
@@ -50,6 +87,7 @@ async def get_menu_content(
     menu_name: str,
     category: int | None = None,
     page: int | None = None,
+    user_id: int | None = None,
 ):
     if level == 0:
         return await main_menu(session, menu_name)
@@ -57,3 +95,5 @@ async def get_menu_content(
         return await catalog(session, level, menu_name)
     elif level == 2:
         return await products(session, level, category, page)
+    elif level == 3:
+        return await cart(session, level, user_id, page)
