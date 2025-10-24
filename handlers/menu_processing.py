@@ -14,7 +14,6 @@ from keyboards.inline import (
     get_user_catalog_btns,
     main_menu_kb,
 )
-from utils.logging_config import logger
 from utils.paginator import Paginator
 
 
@@ -36,7 +35,6 @@ async def catalog(session: AsyncSession, level: int, menu_name: str):
 async def products(session: AsyncSession, level: int, category: int, page: int):
     products = await orm_get_products(session, category)
     paginator = Paginator(products, page=page)
-    logger.debug(paginator.array)
     product, *_ = paginator.get_page()
     image = InputMediaPhoto(
         media=product.image,
@@ -79,7 +77,7 @@ async def cart(session, level, user_id, page, menu_name):
             product_id=product.id,
         )
     if not user_cart:
-        banner = await orm_get_banner(session, menu_name)
+        banner = await orm_get_banner(session, name='Корзина')
         media = InputMediaPhoto(media=banner.image, caption='Корзина пуста')
     return media, keyboard
 
