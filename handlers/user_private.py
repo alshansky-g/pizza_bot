@@ -3,7 +3,12 @@ from aiogram.filters import CommandStart
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.crud import orm_add_to_cart, orm_add_user
+from database.crud import (
+    decrease_items_in_cart,
+    orm_add_to_cart,
+    orm_add_user,
+    orm_delete_from_cart,
+)
 from filters.custom import ChatTypeFilter
 from handlers.menu_processing import get_menu_content
 from keyboards.inline import MenuCallback
@@ -20,11 +25,19 @@ async def start_cmd(message: Message, session: AsyncSession):
 
 @router.callback_query(MenuCallback.filter())
 async def user_menu(callback: CallbackQuery, callback_data: MenuCallback, session: AsyncSession):
-    if callback_data.menu_name == 'В корзину':
-        amount = await add_to_cart(callback, callback_data, session)
-        await session.commit()
-        await callback.answer(f"Добавлено в корзину: {amount}")
-        return
+    menu_name = callback_data.menu_name
+
+    if menu_name == 'В корзину':
+        quantity = await add_to_cart(callback, callback_data, session)
+        await callback.answer(f'Добавлено в корзину. Всего {quantity}')
+    elif menu_name == 'decrease':
+        quantity = await decrease_items_in_cart(
+            session, callback.from_user.id, callback_data.product_id
+        )
+        await callback.answer(f'В корзине: {quantity}')
+    elif menu_name == 'delete':
+        await orm_delete_from_cart(session, callback.from_user.id, callback_data.product_id)
+        await callback.answer('Позиция удалена')
 
     media, reply_markup = await get_menu_content(
         session=session,
@@ -32,6 +45,7 @@ async def user_menu(callback: CallbackQuery, callback_data: MenuCallback, sessio
         menu_name=callback_data.menu_name,
         category=callback_data.category,
         page=callback_data.page,
+        user_id=callback.from_user.id,
     )
 
     await callback.message.edit_media(media=media, reply_markup=reply_markup)
@@ -45,4 +59,6 @@ async def add_to_cart(callback: CallbackQuery, callback_data: MenuCallback, sess
         first_name=callback.from_user.first_name,
         last_name=callback.from_user.last_name,
     )
-    return await orm_add_to_cart(session, callback.from_user.id, callback_data.product_id)
+    amount = await orm_add_to_cart(session, callback.from_user.id, callback_data.product_id)
+    await session.commit()
+    return amount

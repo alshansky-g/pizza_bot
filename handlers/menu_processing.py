@@ -8,6 +8,7 @@ from database.crud import (
     orm_get_user_products,
 )
 from keyboards.inline import (
+    empty_cart_kb,
     get_cart_buttons,
     get_products_btns,
     get_user_catalog_btns,
@@ -35,8 +36,8 @@ async def catalog(session: AsyncSession, level: int, menu_name: str):
 async def products(session: AsyncSession, level: int, category: int, page: int):
     products = await orm_get_products(session, category)
     paginator = Paginator(products, page=page)
+    logger.debug(paginator.array)
     product, *_ = paginator.get_page()
-
     image = InputMediaPhoto(
         media=product.image,
         caption=f'<strong>{product.name}</strong>\n{product.description}\n'
@@ -54,33 +55,36 @@ async def products(session: AsyncSession, level: int, category: int, page: int):
     return image, keyboard
 
 
-# TODO: убрать дебаг
-async def cart(session, level, user_id, page):
-    logger.debug('ДО ЗАПРОСА')
+async def cart(session, level, user_id, page, menu_name):
     user_cart = await orm_get_user_products(session, user_id)
-    logger.debug('ПОСЛЕ ЗАПРОСА, ДО ПЕРЕБОРА В СПИСКЕ')
-    products = [(pos.product, pos.quantity) for pos in user_cart]
-    logger.debug('ПОСЛЕ ПЕРЕБОРА В СПИСКЕ')
-    paginator = Paginator(products, page=page)
-    cart, *_ = paginator.get_page()
-    product, quantity = cart
-    media = InputMediaPhoto(
-        media=product.image,
-        caption=f'<strong>{product.name}</strong>\n{product.description}\n'
-        f'Количество в корзине: <strong>{quantity}</strong>',
-    )
-    pagination_buttons = paginator.get_buttons()
-    keyboard = get_cart_buttons(
-        level=level,
-        pagination_btns=pagination_buttons,
-        page=page,
-        product_id=product.id,
-        quantity=quantity,
-    )
+    keyboard = empty_cart_kb
+    if user_cart:
+        products = [(pos.product, pos.quantity) for pos in user_cart]
+        total_cost = sum(product.price * quantity for product, quantity in products)
+        paginator = Paginator(products, page=page)
+        cart, *_ = paginator.get_page()
+        product, quantity = cart
+        media = InputMediaPhoto(
+            media=product.image,
+            caption=f'<strong>{product.name}: {quantity} x {product.price} = '
+            f'{product.price * quantity}</strong>\n'
+            f'Позиций в корзине: <strong>{len(products)}</strong>\n'
+            f'Общая стоимость заказа: <strong>{total_cost}</strong>',
+        )
+        pagination_buttons = paginator.get_buttons()
+        keyboard = get_cart_buttons(
+            level=level,
+            pagination_btns=pagination_buttons,
+            page=page,
+            product_id=product.id,
+            quantity=quantity,
+        )
+    if not user_cart:
+        banner = await orm_get_banner(session, menu_name)
+        media = InputMediaPhoto(media=banner.image, caption='Корзина пуста')
     return media, keyboard
 
 
-# TODO дописать инлайн меню
 async def get_menu_content(
     session: AsyncSession,
     level: int,
@@ -96,4 +100,4 @@ async def get_menu_content(
     elif level == 2:
         return await products(session, level, category, page)
     elif level == 3:
-        return await cart(session, level, user_id, page)
+        return await cart(session, level, user_id, page, menu_name)

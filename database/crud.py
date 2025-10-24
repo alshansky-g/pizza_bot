@@ -136,8 +136,6 @@ async def decrease_items_in_cart(session: AsyncSession, user_id: int, product_id
         return
     if product.quantity > 1:
         product.quantity -= 1
-        await session.commit()
-        return True
     else:
         await orm_delete_from_cart(session, user_id, product_id)
-        return False
+    await session.commit()
