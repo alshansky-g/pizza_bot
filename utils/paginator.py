@@ -5,7 +5,9 @@ from database.models import Product
 
 
 class Paginator:
-    def __init__(self, array: Sequence[Product], page: int = 1, per_page: int = 1):
+    def __init__(
+        self, array: Sequence[Product | tuple[Product, int]], page: int = 1, per_page: int = 1
+    ):
         self.array = array
         self.page = page
         self.per_page = per_page
