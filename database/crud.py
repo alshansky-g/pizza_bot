@@ -132,6 +132,7 @@ async def decrease_items_in_cart(session: AsyncSession, user_id: int, product_id
             CartProduct.cart_id == user_id, CartProduct.product_id == product_id
         )
     )
+    quantity = product.quantity - 1
     if product is None:
         return
     if product.quantity > 1:
@@ -139,3 +140,4 @@ async def decrease_items_in_cart(session: AsyncSession, user_id: int, product_id
     else:
         await orm_delete_from_cart(session, user_id, product_id)
     await session.commit()
+    return quantity

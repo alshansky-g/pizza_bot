@@ -77,7 +77,6 @@ async def cart(session, level, user_id, page, menu_name):
             pagination_btns=pagination_buttons,
             page=page,
             product_id=product.id,
-            quantity=quantity,
         )
     if not user_cart:
         banner = await orm_get_banner(session, menu_name)

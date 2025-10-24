@@ -30,6 +30,7 @@ async def user_menu(callback: CallbackQuery, callback_data: MenuCallback, sessio
     if menu_name == 'В корзину':
         quantity = await add_to_cart(callback, callback_data, session)
         await callback.answer(f'Добавлено в корзину. Всего {quantity}')
+        return
     elif menu_name == 'decrease':
         quantity = await decrease_items_in_cart(
             session, callback.from_user.id, callback_data.product_id
