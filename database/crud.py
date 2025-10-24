@@ -109,14 +109,12 @@ async def orm_add_to_cart(session: AsyncSession, user_id: int, product_id: int):
 
 async def orm_get_user_products(session: AsyncSession, user_id: int):
     query = (
-        select(User)
-        .options(
-            joinedload(User.cart).joinedload(Cart.products_assoc).joinedload(CartProduct.product)
-        )
-        .where(User.id == user_id)
+        select(CartProduct)
+        .options(joinedload(CartProduct.product))
+        .where(CartProduct.cart_id == user_id)
     )
-    user = await session.scalar(query)
-    return user.cart.products
+    cart = await session.scalars(query)
+    return cart.all()
 
 
 async def orm_delete_from_cart(session: AsyncSession, user_id: int, product_id: int):
