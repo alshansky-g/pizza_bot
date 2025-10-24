@@ -26,7 +26,7 @@ async def start_cmd(message: Message, session: AsyncSession):
 @router.callback_query(MenuCallback.filter())
 async def user_menu(callback: CallbackQuery, callback_data: MenuCallback, session: AsyncSession):
     menu_name = callback_data.menu_name
-
+    quantity = 1
     if menu_name == 'В корзину':
         quantity = await add_to_cart(callback, callback_data, session)
         await callback.answer(f'Добавлено в корзину. Всего {quantity}')
@@ -37,7 +37,9 @@ async def user_menu(callback: CallbackQuery, callback_data: MenuCallback, sessio
         )
         await callback.answer(f'В корзине: {quantity}')
     elif menu_name == 'delete':
-        await orm_delete_from_cart(session, callback.from_user.id, callback_data.product_id)
+        quantity = await orm_delete_from_cart(
+            session, callback.from_user.id, callback_data.product_id
+        )
         await callback.answer('Позиция удалена')
 
     media, reply_markup = await get_menu_content(
@@ -45,7 +47,7 @@ async def user_menu(callback: CallbackQuery, callback_data: MenuCallback, sessio
         level=callback_data.level,
         menu_name=callback_data.menu_name,
         category=callback_data.category,
-        page=callback_data.page,
+        page=callback_data.page if quantity else callback_data.page - 1,
         user_id=callback.from_user.id,
     )
 
