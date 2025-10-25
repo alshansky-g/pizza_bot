@@ -27,9 +27,9 @@ async def start_cmd(message: Message, session: AsyncSession):
 async def user_menu(callback: CallbackQuery, callback_data: MenuCallback, session: AsyncSession):
     menu_name = callback_data.menu_name
     quantity = 1
-    if menu_name == 'В корзину':
+    if menu_name == 'add_to_cart':
         quantity = await add_to_cart(callback, callback_data, session)
-        await callback.answer(f'Добавлено в корзину. Всего {quantity}')
+        await callback.answer(f'В корзине: {quantity}')
     elif menu_name == 'decrease':
         quantity = await decrease_items_in_cart(
             session, callback.from_user.id, callback_data.product_id
