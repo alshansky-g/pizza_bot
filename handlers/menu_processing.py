@@ -1,39 +1,28 @@
-from aiogram.types import InputMediaPhoto
+from aiogram.types import CallbackQuery, InputMediaPhoto
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.crud import (
-    orm_get_banner,
-    orm_get_categories,
-    orm_get_products,
-    orm_get_user_products,
-)
-from keyboards.inline import (
-    empty_cart_kb,
-    get_cart_buttons,
-    get_products_btns,
-    get_user_catalog_btns,
-    main_menu_kb,
-)
+from database import crud
+from keyboards import inline
 from utils.paginator import Paginator
 
 
 async def main_menu(session: AsyncSession, menu_name: str):
-    banner = await orm_get_banner(session, menu_name)
+    banner = await crud.orm_get_banner(session, menu_name)
     media = InputMediaPhoto(media=banner.image, caption=banner.description)
-    keyboard = main_menu_kb
+    keyboard = inline.main_menu_kb
     return media, keyboard
 
 
 async def catalog(session: AsyncSession, level: int, menu_name: str):
-    banner = await orm_get_banner(session, menu_name)
+    banner = await crud.orm_get_banner(session, menu_name)
     image = InputMediaPhoto(media=banner.image, caption=banner.description)
-    categories = await orm_get_categories(session)
-    keyboard = get_user_catalog_btns(level=level, categories=categories)
+    categories = await crud.orm_get_categories(session)
+    keyboard = inline.get_user_catalog_btns(level=level, categories=categories)
     return image, keyboard
 
 
 async def products(session: AsyncSession, level: int, category: int, page: int):
-    products = await orm_get_products(session, category)
+    products = await crud.orm_get_products(session, category)
     paginator = Paginator(products, page=page)
     product, *_ = paginator.get_page()
     image = InputMediaPhoto(
@@ -43,7 +32,7 @@ async def products(session: AsyncSession, level: int, category: int, page: int):
         f'<b>Товар {paginator.page} из {paginator.pages}</b>',
     )
     pagination_buttons = paginator.get_buttons()
-    keyboard = get_products_btns(
+    keyboard = inline.get_products_btns(
         level=level,
         category=category,
         page=page,
@@ -54,8 +43,8 @@ async def products(session: AsyncSession, level: int, category: int, page: int):
 
 
 async def cart(session: AsyncSession, level: int, user_id: int, page: int):
-    user_cart = await orm_get_user_products(session, user_id)
-    keyboard = empty_cart_kb
+    user_cart = await crud.orm_get_user_products(session, user_id)
+    keyboard = inline.empty_cart_kb
     if user_cart:
         products = [(pos.product, pos.quantity) for pos in user_cart]
         total_cost = sum(product.price * quantity for product, quantity in products)
@@ -70,16 +59,53 @@ async def cart(session: AsyncSession, level: int, user_id: int, page: int):
             f'Общая стоимость заказа: <b>{total_cost}</b>',
         )
         pagination_buttons = paginator.get_buttons()
-        keyboard = get_cart_buttons(
+        keyboard = inline.get_cart_buttons(
             level=level,
             pagination_btns=pagination_buttons,
             page=page,
             product_id=product.id,
         )
     if not user_cart:
-        banner = await orm_get_banner(session, name='Корзина')
+        banner = await crud.orm_get_banner(session, name='Корзина')
         media = InputMediaPhoto(media=banner.image, caption='Корзина пуста')
     return media, keyboard
+
+
+async def process_cart_actions(
+    callback: CallbackQuery,
+    callback_data: inline.MenuCallback,
+    session: AsyncSession,
+    quantity: int = 1,
+):
+    menu_name = callback_data.menu_name
+    if menu_name == 'add_to_cart':
+        quantity = await add_to_cart(callback, callback_data, session)
+        await callback.answer(f'В корзине: {quantity}')
+    elif menu_name == 'decrease':
+        quantity = await crud.decrease_items_in_cart(
+            session, callback.from_user.id, callback_data.product_id
+        )
+        await callback.answer(f'В корзине: {quantity}')
+    elif menu_name == 'delete':
+        quantity = await crud.orm_delete_from_cart(
+            session, callback.from_user.id, callback_data.product_id
+        )
+        await callback.answer('Позиция удалена')
+    return quantity
+
+
+async def add_to_cart(
+    callback: CallbackQuery, callback_data: inline.MenuCallback, session: AsyncSession
+):
+    await crud.orm_add_user(
+        session=session,
+        user_id=callback.from_user.id,
+        first_name=callback.from_user.first_name,
+        last_name=callback.from_user.last_name,
+    )
+    amount = await crud.orm_add_to_cart(session, callback.from_user.id, callback_data.product_id)
+    await session.commit()
+    return amount
 
 
 async def get_menu_content(

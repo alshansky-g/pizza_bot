@@ -195,7 +195,7 @@ def get_cart_buttons(*, level: int, page: int, pagination_btns: dict, product_id
             callback_data=MenuCallback(
                 level=3, menu_name='order', page=page, product_id=product_id
             ).pack(),
-        )
+        ),
     )
     return keyboard.as_markup()
 
