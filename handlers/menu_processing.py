@@ -1,3 +1,5 @@
+"""Module contains all functions for navigation via inline menu."""
+
 from aiogram.types import CallbackQuery, InputMediaPhoto
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -7,6 +9,7 @@ from utils.paginator import Paginator
 
 
 async def main_menu(session: AsyncSession, menu_name: str):
+    """Forms 0 level of inline menu(main menu)."""
     banner = await crud.orm_get_banner(session, menu_name)
     media = InputMediaPhoto(media=banner.image, caption=banner.description)
     keyboard = inline.main_menu_kb
@@ -14,6 +17,7 @@ async def main_menu(session: AsyncSession, menu_name: str):
 
 
 async def catalog(session: AsyncSession, level: int, menu_name: str):
+    """Forms 1 level of inline menu to show products categories."""
     banner = await crud.orm_get_banner(session, menu_name)
     image = InputMediaPhoto(media=banner.image, caption=banner.description)
     categories = await crud.orm_get_categories(session)
@@ -22,6 +26,7 @@ async def catalog(session: AsyncSession, level: int, menu_name: str):
 
 
 async def products(session: AsyncSession, level: int, category: int, page: int):
+    """Forms 2 level of inline menu with all products inside a category."""
     products = await crud.orm_get_products(session, category)
     paginator = Paginator(products, page=page)
     product, *_ = paginator.get_page()
@@ -43,6 +48,7 @@ async def products(session: AsyncSession, level: int, category: int, page: int):
 
 
 async def cart(session: AsyncSession, level: int, user_id: int, page: int):
+    """Forms 3 level of inline menu to show user cart"""
     user_cart = await crud.orm_get_user_products(session, user_id)
     keyboard = inline.empty_cart_kb
     if user_cart:
@@ -77,6 +83,7 @@ async def process_cart_actions(
     session: AsyncSession,
     quantity: int = 1,
 ):
+    """Handles all increase/decrease/delete operations in user cart."""
     menu_name = callback_data.menu_name
     if menu_name == 'add_to_cart':
         quantity = await add_to_cart(callback, callback_data, session)
@@ -97,6 +104,7 @@ async def process_cart_actions(
 async def add_to_cart(
     callback: CallbackQuery, callback_data: inline.MenuCallback, session: AsyncSession
 ):
+    """Creates user if not in DB, adds product to his cart"""
     await crud.orm_add_user(
         session=session,
         user_id=callback.from_user.id,
@@ -116,6 +124,7 @@ async def get_menu_content(
     page: int | None = None,
     user_id: int | None = None,
 ):
+    """Mediator func for managing inline menu levels"""
     if level == 0:
         return await main_menu(session, menu_name)
     elif level == 1:

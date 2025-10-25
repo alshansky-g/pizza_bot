@@ -59,6 +59,7 @@ main_menu_kb = (
 def get_user_catalog_btns(
     *, level: int, categories: Sequence[Category], adjust_values: tuple[int, ...] = (2,)
 ):
+    """Dynamically create inline buttons for all products categories"""
     keyboard = InlineKeyboardBuilder()
     keyboard.add(
         InlineKeyboardButton(
@@ -95,6 +96,7 @@ def get_products_btns(
     product_id: int,
     adjust_values: tuple[int, ...] = (2, 1),
 ):
+    """Dynamically create inline buttons for all products inside a certain category"""
     keyboard = InlineKeyboardBuilder()
     keyboard.add(
         InlineKeyboardButton(
@@ -145,6 +147,7 @@ def get_products_btns(
 
 
 def get_cart_buttons(*, level: int, page: int, pagination_btns: dict, product_id: int):
+    """Dynamically create inline buttons for user cart."""
     keyboard = InlineKeyboardBuilder()
     keyboard.add(
         InlineKeyboardButton(
@@ -201,6 +204,7 @@ def get_cart_buttons(*, level: int, page: int, pagination_btns: dict, product_id
 
 
 def get_inline_kbd(*, buttons: dict[str, str], adjust_values: tuple[int, ...] = (2,)):
+    """Dynamically create inline buttons from dict."""
     keyboard = InlineKeyboardBuilder()
     for text, data in buttons.items():
         keyboard.add(InlineKeyboardButton(text=text, callback_data=data))
