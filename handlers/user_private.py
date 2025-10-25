@@ -30,7 +30,6 @@ async def user_menu(callback: CallbackQuery, callback_data: MenuCallback, sessio
     if menu_name == 'В корзину':
         quantity = await add_to_cart(callback, callback_data, session)
         await callback.answer(f'Добавлено в корзину. Всего {quantity}')
-        return
     elif menu_name == 'decrease':
         quantity = await decrease_items_in_cart(
             session, callback.from_user.id, callback_data.product_id
@@ -41,18 +40,21 @@ async def user_menu(callback: CallbackQuery, callback_data: MenuCallback, sessio
             session, callback.from_user.id, callback_data.product_id
         )
         await callback.answer('Позиция удалена')
-
+    page = (
+        callback_data.page - 1 if (not quantity and callback_data.page > 1) else callback_data.page
+    )
     media, reply_markup = await get_menu_content(
         session=session,
         level=callback_data.level,
         menu_name=callback_data.menu_name,
         category=callback_data.category,
-        page=callback_data.page if quantity else callback_data.page - 1,
+        page=page,
         user_id=callback.from_user.id,
     )
-
+    if media.caption == callback.message.html_text:
+        await callback.answer()
+        return
     await callback.message.edit_media(media=media, reply_markup=reply_markup)
-    await callback.answer()
 
 
 async def add_to_cart(callback: CallbackQuery, callback_data: MenuCallback, session: AsyncSession):

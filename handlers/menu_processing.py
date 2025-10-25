@@ -38,9 +38,9 @@ async def products(session: AsyncSession, level: int, category: int, page: int):
     product, *_ = paginator.get_page()
     image = InputMediaPhoto(
         media=product.image,
-        caption=f'<strong>{product.name}</strong>\n{product.description}\n'
+        caption=f'<b>{product.name}</b>\n{product.description}\n'
         f'Стоимость: {round(product.price, 2)}\n'
-        f'<strong>Товар {paginator.page} из {paginator.pages}</strong>',
+        f'<b>Товар {paginator.page} из {paginator.pages}</b>',
     )
     pagination_buttons = paginator.get_buttons()
     keyboard = get_products_btns(
@@ -64,10 +64,10 @@ async def cart(session, level, user_id, page, menu_name):
         product, quantity = cart
         media = InputMediaPhoto(
             media=product.image,
-            caption=f'<strong>{product.name}: {quantity} x {product.price} = '
-            f'{product.price * quantity}</strong>\n'
-            f'Позиций в корзине: <strong>{len(products)}</strong>\n'
-            f'Общая стоимость заказа: <strong>{total_cost}</strong>',
+            caption=f'<b>{product.name}: {quantity} x {product.price} = '
+            f'{product.price * quantity}</b>\n'
+            f'Позиций в корзине: <b>{len(products)}</b>\n'
+            f'Общая стоимость заказа: <b>{total_cost}</b>',
         )
         pagination_buttons = paginator.get_buttons()
         keyboard = get_cart_buttons(

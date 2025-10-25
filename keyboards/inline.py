@@ -61,7 +61,10 @@ def get_user_catalog_btns(
     keyboard = InlineKeyboardBuilder()
     keyboard.add(
         InlineKeyboardButton(
-            text='Назад', callback_data=MenuCallback(level=level - 1, menu_name='Главная').pack()
+            text='Назад',
+            callback_data=MenuCallback(
+                level=level - 1, menu_name='Главная', category=categories[0].id
+            ).pack(),
         )
     )
     keyboard.add(
@@ -94,7 +97,14 @@ def get_products_btns(
     keyboard = InlineKeyboardBuilder()
     keyboard.add(
         InlineKeyboardButton(
-            text='Назад', callback_data=MenuCallback(level=level - 1, menu_name='Категории').pack()
+            text='Назад',
+            callback_data=MenuCallback(
+                level=level - 1,
+                menu_name='Категории',
+                category=category,
+                page=page,
+                product_id=product_id,
+            ).pack(),
         )
     )
     keyboard.add(
@@ -106,7 +116,11 @@ def get_products_btns(
         InlineKeyboardButton(
             text='Купить 💸',
             callback_data=MenuCallback(
-                level=level, menu_name='В корзину', product_id=product_id, category=category
+                level=level,
+                menu_name='В корзину',
+                product_id=product_id,
+                category=category,
+                page=page,
             ).pack(),
         )
     )
@@ -170,7 +184,10 @@ def get_cart_buttons(*, level, page, pagination_btns, product_id):
     keyboard = keyboard.row(*row)
     keyboard.row(
         InlineKeyboardButton(
-            text='Назад', callback_data=MenuCallback(level=1, menu_name='Категории').pack()
+            text='Назад',
+            callback_data=MenuCallback(
+                level=1, menu_name='Категории', page=page, product_id=product_id
+            ).pack(),
         )
     )
     return keyboard.as_markup()
