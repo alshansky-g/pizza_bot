@@ -143,7 +143,7 @@ def get_products_btns(
     return keyboard.row(*row).as_markup()
 
 
-def get_cart_buttons(*, level, page, pagination_btns, product_id):
+def get_cart_buttons(*, level: int, page: int, pagination_btns: dict, product_id: int):
     keyboard = InlineKeyboardBuilder()
     keyboard.add(
         InlineKeyboardButton(

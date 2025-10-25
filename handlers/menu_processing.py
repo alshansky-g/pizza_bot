@@ -53,7 +53,7 @@ async def products(session: AsyncSession, level: int, category: int, page: int):
     return image, keyboard
 
 
-async def cart(session, level, user_id, page, menu_name):
+async def cart(session: AsyncSession, level: int, user_id: int, page: int):
     user_cart = await orm_get_user_products(session, user_id)
     keyboard = empty_cart_kb
     if user_cart:
@@ -97,4 +97,4 @@ async def get_menu_content(
     elif level == 2:
         return await products(session, level, category, page)
     elif level == 3:
-        return await cart(session, level, user_id, page, menu_name)
+        return await cart(session, level, user_id, page)
